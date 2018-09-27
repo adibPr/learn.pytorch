@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+# sys module
+import time 
+import os
+import sys
+
+# third parties module
 import torch
 from torch import nn
 from torch.nn import functional as F
@@ -10,6 +16,10 @@ import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
 
+# local module
+path_this = os.path.abspath (os.path.dirname (__file__))
+sys.path.append (os.path.join (path_this, '..'))
+from utils import progress_bar
 from model import CNN
 
 transformer = transforms.Compose ([
@@ -43,54 +53,78 @@ train_loader = torch.utils.data.DataLoader (dataset, batch_size=20,
 validation_loader = torch.utils.data.DataLoader (dataset, batch_size=20,
         num_workers=2, sampler=validation_sampler)
 
+
+# for GPU optimization
+device = torch.device ("cuda:0" if torch.cuda.is_available ()  else "cpu")
+print ("Using ", device)
+
 # create network
 # net = CNN ()
 
+# """
 # use resnet34 pretrained with freeze model
 net = torchvision.models.resnet34 (pretrained=True)
 # freeze the network
 for param in net.parameters () : 
-    param.require_grad = False
+    param.requires_grad = True
 
 net.fc = nn.Linear (512, 80)
-print (net)
+# """
+
+net.to (device)
 
 # optimization
 criterion = nn.CrossEntropyLoss ()
-optimizer = optim.Adam (net.parameters (), lr=0.001)
+optimizer = optim.Adam (net.fc.parameters (), lr=0.001)
 
 # training network
 print ("Training..")
 for epoch in range (10) : 
     running_loss = 0
+    tot_time = 0
     for i, data in enumerate (train_loader) : 
+        t_start = time.time ()
+        progress_bar (i+1, len (train_loader))
+
         inputs, labels = data
+        # send to device
+        inputs, labels = inputs.to (device), labels.to (device)
+
+        # feed forward
         optimizer.zero_grad ()
         outputs = net (inputs)
+
         loss = criterion (outputs, labels)
         loss.backward ()
         optimizer.step ()
 
-        print ("epoch {}, batch {}, loss {:2f}".format (
-            epoch + 1,
-            i + 1, 
-            loss.item ()
-        ))
+        tot_time += time.time () - t_start
+
+    progress_bar (None)
+
+    # validating
+    with torch.no_grad () : 
+        correct = 0
+        total = 0
+        for i, data in enumerate (validation_loader) : 
+            progress_bar (i, len (validation_loader))
+            inputs, labels = data
+            inputs, labels = inputs.to (device), labels.to (device)
+
+            predicted = net (inputs)
+            _, predicted = torch.max (predicted.data, 1)
+
+            correct += (predicted == labels).sum ().item ()
+            total += labels.size (0)
+
+    progress_bar (None)
+
+    print ("epoch {},loss {:.2f}, acc {:.2F},{:.2F}/it".format (
+        epoch + 1,
+        loss.item (),
+        correct/total,
+        tot_time / len (train_loader)
+    ))
 print ('Finished Training')
-
-# testing network
-print ("Testing")
-with torch.no_grad () : 
-    correct = 0
-    total = 0
-    for i, data in enumerate (validation_loader) : 
-        inputs, labels = data
-        predicted = net (inputs)
-        _, predicted = torch.max (predicted.data, 1)
-
-        correct += (predicted == labels).sum ().item ()
-        total += labels.size (0)
-
-    print ('Accuracy : {:.2F}'.format (100 * (correct / total) ))
 
 # """
