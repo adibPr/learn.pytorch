@@ -1,7 +1,9 @@
 """
-01_Resnet34.py
-To replicate result of chapter 1, minute 20:44 of fast.ai lesson 1 video.
-We first try to use our own approach, then compare it with fast.ai and improve it
+01_Resnet34_Aug.py
+To implement our own data augmentation, and see its effect on accuracy.
+Based on fast.ai transforms_side_on augmentation step (fastai/transforms.py:701) :
+    Random Rotate (10 degree) -> Random Brightness -> Random Horizontal Flip
+
 """
 
 # sys module
@@ -23,7 +25,7 @@ import numpy as np
 # local module
 path_this = os.path.abspath (os.path.dirname (__file__))
 sys.path.append (os.path.join (path_this, '..'))
-from utils import progress_bar
+from utils import progress_bar, imshow_tensor
 
 """
 The general idea is to use resnet34 pretrained model, with data resized to
@@ -31,11 +33,21 @@ The general idea is to use resnet34 pretrained model, with data resized to
 """
 
 sz = 224 # for size
-PATH = '/home/paperspace/data/dogscats' # for data path
+PATH = '/media/Linux/Learn/PyTorch/dataset/dogscats' # for data path
 
+# need to see the image first, we did not normalize it.
 # first declare transformation
 my_transformer = transforms.Compose ([
     transforms.Resize ((sz,sz)),
+
+    # random rotation by 10 degree
+    transforms.RandomRotation (10),
+
+    # random brightness
+    transforms.ColorJitter (brightness=0.05), 
+
+    # random horizontal flip
+    transforms.RandomHorizontalFlip (),
 
     # to tensor
     transforms.ToTensor (),
@@ -54,7 +66,6 @@ valid_set = torchvision.datasets.ImageFolder (root=PATH+'/valid',
 # make loader
 train_loader = torch.utils.data.DataLoader (train_set, batch_size=64, num_workers=4, shuffle=True)
 valid_loader = torch.utils.data.DataLoader (valid_set, batch_size=64, num_workers=4, shuffle=True)
-        
 
 # then create learner of arch resnet34 with pretrained
 device = torch.device (torch.device ("cuda") if torch.cuda.is_available ()  else "cpu")
@@ -130,12 +141,3 @@ for epoch in range (3) :
     ))
 print ('Finished Training')
 
-"""
-Up until here we got 97.1 accuracy for the first epoch, which is a little
-different with fast.ai with 98.97 accuracy. But it got it with only 20 s.
-We need like 5 minute on it. 
-
-Its mainly because in fast.ai library, they use precalculated scheme that
-store its temporary result from unchanged network, so only calculation of the last
-layer involved.
-"""
