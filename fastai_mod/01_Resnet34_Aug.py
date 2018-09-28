@@ -33,11 +33,11 @@ The general idea is to use resnet34 pretrained model, with data resized to
 """
 
 sz = 224 # for size
-PATH = '/media/Linux/Learn/PyTorch/dataset/dogscats' # for data path
+PATH = '/home/paperspace/data/dogscats' # for data path
 
 # need to see the image first, we did not normalize it.
 # first declare transformation
-my_transformer = transforms.Compose ([
+train_transformer = transforms.Compose ([
     transforms.Resize ((sz,sz)),
 
     # random rotation by 10 degree
@@ -56,12 +56,22 @@ my_transformer = transforms.Compose ([
     # source for each value : https://pytorch.org/docs/stable/torchvision/models.html
     transforms.Normalize ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
 ])
+valid_transformer =  transforms.Compose ([
+    transforms.Resize ((sz,sz)),
+
+    # to tensor
+    transforms.ToTensor (),
+
+    # Normalize args is (Mean ..), (std ..) for each channel
+    # source for each value : https://pytorch.org/docs/stable/torchvision/models.html
+    transforms.Normalize ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) 
+])
 
 # load data
 train_set = torchvision.datasets.ImageFolder (root=PATH+'/train', 
-        transform=my_transformer)
+        transform=train_transformer)
 valid_set = torchvision.datasets.ImageFolder (root=PATH+'/valid', 
-        transform=my_transformer)
+        transform=valid_transformer)
 
 # make loader
 train_loader = torch.utils.data.DataLoader (train_set, batch_size=64, num_workers=4, shuffle=True)
@@ -140,4 +150,12 @@ for epoch in range (3) :
         correct/total
     ))
 print ('Finished Training')
+
+"""
+When the validation set is also being augmented, the first epoch accuracy is 96.6, 
+lower than the non augmented version. But if only train set is being augmented,
+the accuracy is increase from 97.1 to 97.4. In the second epoch, it increase even
+further to 97.7. 
+So, data augmentation can be used only to train data set, not validation data set.
+"""
 
