@@ -2,3 +2,4 @@
 **/__pycache__
 *.pyc
 *.sw*
+/keras_ref
