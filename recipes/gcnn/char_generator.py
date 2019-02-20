@@ -80,9 +80,8 @@ class TextLoader(object):
         self.y_batches = np.split(ydata.reshape(self.batch_size, -1), self.num_batches, 1)
 
     def __call__(self):
-        while True:
-            for x, y in zip(self.x_batches, self.y_batches):
-                yield x, np.expand_dims(y, -1)
+        for x, y in zip(self.x_batches, self.y_batches):
+            yield x, np.expand_dims(y, -1)
 
 if __name__ == '__main__' :
     TL = TextLoader ('data', batch_size=5, seq_length=50)
