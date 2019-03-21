@@ -3,3 +3,4 @@
 *.pyc
 *.sw*
 /keras_ref
+**/.ipynb_checkpoints
