@@ -39,6 +39,7 @@ class GatedCNN (nn.Module):
         # since we can have multiple channel, we use avg pool layer
         self.pool = nn.AvgPool2d ((parameter['channel_out'], parameter['max_seq']))
         self.fc = nn.Linear (parameter['channel_out'], parameter['vocab_size'])
+        self.softmax = nn.Softmax (dim=2)
 
 
     def forward (self, x):
@@ -70,5 +71,6 @@ class GatedCNN (nn.Module):
 
         # get to fc
         out = self.fc (out)
+        out = self.softmax (out)
         # out -->  (batch, seq, vocab_size)
         return out

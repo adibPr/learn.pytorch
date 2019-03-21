@@ -34,7 +34,7 @@ gcnn = GatedCNN (parameter)
 gcnn.to (device)
 
 criterion = nn.CrossEntropyLoss ()
-learning_rate = 0.0005
+learning_rate = 0.005
 optimizer = torch.optim.Adam (gcnn.parameters (), lr = learning_rate)
 
 
@@ -79,21 +79,22 @@ for e in range (parameter['epoch']):
 
     print ("Avg loss - {} : {}".format (e, avg_loss))
 
-# try generate content
-char = random.randint (0, parameter['vocab_size'])
-print (TL.chars[char], end="")
+# try generate 5 content
+for i in range (5): 
+    char = random.randint (0, parameter['vocab_size'])
+    print (TL.chars[char], end="")
 
-gcnn.eval()
-ctr = 0
-with torch.no_grad ():
-    while True:
-        x = torch.tensor ([char]).unsqueeze (0).to (device)
-        out = gcnn (x)
-        out = out.squeeze (0).squeeze (0)
-        char = torch.argmax (out)
-        print (TL.chars[char], end="")
-        ctr += 1
+    gcnn.eval()
+    ctr = 0
+    with torch.no_grad ():
+        while True:
+            x = torch.tensor ([char]).unsqueeze (0).to (device)
+            out = gcnn (x)
+            out = out.squeeze (0).squeeze (0)
+            char = torch.argmax (out)
+            print (TL.chars[char], end="")
+            ctr += 1
 
-        if TL.chars[char] == '.' or ctr >= 100 :
-            break
-print ()
+            if TL.chars[char] == '.' or ctr >= 100 :
+                break
+    print ()
